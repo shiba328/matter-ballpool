@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    .wrap {
+      display: flex;
+      justify-content: space-around;
+    }
+    .canvas {
+      position: relative
+    }
+    .count {
+      position: absolute;
+      top: 100px;
+      width: 100%;
+      text-align: center;
+      font-size: 300%;
+    }
+    p{
+      margin: 0
+    }
+    .Lose span, .Win span{
+      animation: UpfadeIn 1s;
+      width: 100%;
+      display: block
+    }
+    .Lose{
+      color: blue;
+    }
+    .Win {
+      color: red;
+    }
+    @keyframes UpfadeIn {
+      0% {
+        opacity: 0;
+      }
+      50%{
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body onload="reload()">
+<script src="matter.js"></script>
+<div class="wrap">
+  <div id="red" class="canvas"><p>ロード中</p></div>
+  <div id="blue" class="canvas"><p>ロード中</p></div>
+</div>
+
+<button onclick="reload()">リロード</button>
+<script>
+//onloadとsetButtonClick時に発火
+var reload = function() {
+  const setting = [
+    {
+      posY: 0,
+      row: 7,
+      col: 5,
+      element: document.querySelector('#red'),
+      texture: [
+        'texture1@30.png',
+        'texture1@50.png',
+        'texture1@70.png'
+      ],
+      text: 30,
+    }, {
+      posY: 0,
+      row: 7,
+      col: 2,
+      element: document.querySelector('#blue'),
+      texture: [
+        'texture2@30.png',
+        'texture2@50.png',
+        'texture2@70.png'
+      ],
+      text: 10,
+    }
+  ]
+  ballpoll(setting)
+  count(setting)
+}
+
+var count = function(setting) {
+  console.log('===24,count')
+  setting.forEach(e => {
+    var elem = document.createElement( 'div' );
+    elem.classList.add('count')
+
+
+    var speed = 30,
+    countMax = Math.max.apply(null, setting.map(v => v.text)),
+    thisCount = 0,
+    countTimer;
+
+    function timer(){
+        countTimer = setInterval(function(){
+            var countNext = thisCount++;
+            elem.innerText = countNext + '%'
+            if(countNext == countMax){
+                var saffix = ( countMax == e.text ) ? 'Win' : 'Lose'; 
+                elem.innerHTML = `${e.text}%<p class="${saffix}"><span>${saffix}</span></p>`
+                
+                clearInterval(countTimer);
+            }
+        }, speed);
+    }
+    timer();
+
+    // elem.innerText = e.text + '%'
+    e.element.appendChild(elem)
+  })
+}
+
+var ballpoll = function(setting) {
+  console.log('===27,ballpoll')
+
+  const canvasW = 300,
+      canvasH = 600
+
+  setting.forEach(e => {
+    //表示するdomの中身を空に
+    e.element.innerHTML = '';
+
+    // module aliases
+    var Engine = Matter.Engine,
+        Render = Matter.Render,
+        World = Matter.World,
+        Composites = Matter.Composites,
+        Common = Matter.Common,
+        Bodies = Matter.Bodies,
+        Body = Matter.Body
+
+    // create an engine
+    var engine = Engine.create();
+    
+    // run the engine
+    Engine.run(engine);
+
+    // create two boxes and a ground
+    var floor = Bodies.rectangle(canvasW/2, canvasH, canvasW, 20, { 
+      render: {
+        fillStyle: 'transparent',
+        strokeStyle: 'transparent'
+      },
+      isStatic: true 
+    })
+    var rightWall = Bodies.rectangle(0, canvasH/2, 5, canvasH, { 
+      render: {
+        fillStyle: 'transparent',
+        strokeStyle: 'transparent'
+      },
+      isStatic: true 
+    })
+    var leftWall = Bodies.rectangle(canvasW, canvasH/2, 5, canvasH, { 
+      render: {
+        fillStyle: 'transparent',
+        strokeStyle: 'transparent'
+      },
+      isStatic: true 
+    })
+    // 壁と床を作る
+    World.add(engine.world, [
+      rightWall,
+      leftWall,
+      floor
+    ]);
+  
+    // create a renderer
+    var render = Render.create({
+        element: e.element,
+        engine: engine,
+        options: {
+          width: canvasW,
+          height: canvasH,
+          wireframes: false
+        }
+    });
+    
+    //Composites.stack(posX, posY, rowCount, colCount, rowSpan, colSpan )
+    var stack = Composites.stack(10, e.posY, e.row, e.col, 10, 0, function(x, y) {
+      //iから3のRandom整数で表示する内容を変更
+      var num = parseInt(Common.random(1, 4))
+      
+      var size = 0
+      if( num == 1) {
+        size = 15
+      } else if( num == 2) {
+        size = 25
+      } else if(num == 3) {
+        size = 35
+      } else {
+        console.log('===156 stack Random switch Error: ' + num)
+      }
+      
+      var box = Bodies.circle(x, y, size, {
+          render: {
+            sprite: { 
+              texture: e.texture[num-1]
+            },
+            strokeStyle: 'transparent'
+          },
+          restitution: 0.1,
+          friction: 0.6
+        });
+        // 初期値の回転をRandomに
+        Body.rotate( box, parseInt(Common.random(1, 360)));
+        return box
+    });
+    World.add(engine.world, [
+        stack
+    ]);
+
+    // run the renderer
+    Render.run(render);
+  });
+
+}
+</script>
